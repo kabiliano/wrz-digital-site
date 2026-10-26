@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Leads diagnostic</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.js"></script>
+<style>
+  :root{
+    --bg:#1A1D23; --card:#2B303B; --card-2:#23272F; --fg:#F4F5F7; --muted:#939CAC;
+    --accent:#E8A33D; --accent-soft:rgba(232,163,61,0.14); --success:#4FAE8C; --alert:#D9534F;
+    --cold:#8AA8E8; --line:rgba(244,245,247,0.09); --radius:18px;
+    --display:'Fraunces',Georgia,serif; --body:'Inter',-apple-system,BlinkMacSystemFont,sans-serif; --mono:'IBM Plex Mono',monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);-webkit-font-smoothing:antialiased;min-height:100vh}
+  body{padding:24px 16px 48px}
+  .wrap{max-width:880px;margin:0 auto}
+  .hidden{display:none !important}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+  h1{font-family:var(--display);font-weight:600;font-size:28px;line-height:1.2;margin:6px 0 4px}
+  .muted{color:var(--muted)}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:11px 16px;border-radius:12px;border:none;background:var(--accent);color:#1A1D23;font-family:var(--body);font-weight:700;font-size:14px;cursor:pointer;transition:filter .15s}
+  .btn:hover{filter:brightness(1.07)} .btn:disabled{opacity:.45;cursor:not-allowed}
+  .btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--line);font-weight:600}
+  .btn-ghost:hover{color:var(--fg);border-color:rgba(244,245,247,.25)}
+  .btn-danger{background:transparent;color:var(--alert);border:1px solid rgba(217,83,79,.35);font-weight:600}
+  .btn-sm{padding:8px 12px;font-size:13px;border-radius:10px}
+  input,select,textarea{width:100%;background:var(--card-2);border:1px solid var(--line);border-radius:12px;color:var(--fg);font-family:var(--body);font-size:14.5px;padding:12px 13px}
+  input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
+  textarea{min-height:110px;resize:vertical;line-height:1.5}
+  label{display:block;font-family:var(--mono);font-size:11.5px;color:var(--muted);margin:0 0 6px;letter-spacing:.03em}
+
+  /* Login */
+  .login{max-width:400px;margin:8vh auto 0;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:30px 24px}
+  .login .field{margin-bottom:14px}
+  .login .btn{width:100%;margin-top:4px}
+  .error{color:var(--alert);font-size:13px;margin:10px 0 0;min-height:18px}
+
+  /* Header */
+  .head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+  .head-actions{display:flex;gap:8px;flex-wrap:wrap}
+  .stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:16px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+  .stat .n{font-family:var(--display);font-size:26px;font-weight:700;line-height:1}
+  .stat .l{font-family:var(--mono);font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:6px}
+  .filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+  .chip{padding:7px 12px;border-radius:99px;border:1px solid var(--line);background:transparent;color:var(--muted);font-family:var(--body);font-size:13px;font-weight:600;cursor:pointer}
+  .chip.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+
+  /* Lead cards */
+  .lead{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px;margin-bottom:12px}
+  .lead-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}
+  .lead-name{font-family:var(--display);font-size:20px;font-weight:600}
+  .lead-sub{color:var(--muted);font-size:13.5px;margin-top:2px}
+  .lead-contact{font-size:13.5px;margin-top:8px;display:flex;gap:10px;flex-wrap:wrap}
+  .lead-contact a{color:var(--accent);text-decoration:none}
+  .pills{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+  .pill{display:inline-block;padding:4px 10px;border-radius:99px;font-size:11.5px;font-family:var(--mono);font-weight:500;white-space:nowrap}
+  .p-chaud{background:rgba(217,83,79,.15);color:var(--alert)}
+  .p-tiede{background:var(--accent-soft);color:var(--accent)}
+  .p-froid{background:rgba(138,168,232,.15);color:var(--cold)}
+  .p-status{background:rgba(244,245,247,.07);color:var(--fg)}
+  .p-due{background:rgba(217,83,79,.15);color:var(--alert)}
+  .bars{display:grid;grid-template-columns:1fr 1fr;gap:10px 18px;margin:16px 0}
+  .bar-top{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px}
+  .bar-top b{font-weight:600} .bar-top span{font-family:var(--mono);color:var(--muted)}
+  .track{height:8px;border-radius:99px;background:rgba(244,245,247,.08);overflow:hidden}
+  .fill{height:100%;border-radius:99px}
+  .tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:14px}
+  .tag{background:var(--card-2);border:1px solid var(--line);border-radius:8px;padding:5px 9px;font-size:12.5px}
+  .tag em{font-style:normal;font-family:var(--mono);font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-right:6px}
+  .quote{background:var(--card-2);border-left:3px solid var(--accent);border-radius:10px;padding:12px 14px;font-style:italic;font-size:14px;line-height:1.5;color:#D5D9E0;margin-bottom:14px;white-space:pre-wrap;word-break:break-word}
+  .edit-grid{display:grid;grid-template-columns:200px 1fr;gap:12px;align-items:start}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .meta{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:12px}
+  .empty{text-align:center;color:var(--muted);padding:40px 16px;background:var(--card);border:1px dashed var(--line);border-radius:var(--radius)}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:600;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:10}
+  .toast.show{opacity:1}
+
+  @media (max-width:640px){
+    .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .bars{grid-template-columns:1fr}
+    .edit-grid{grid-template-columns:1fr}
+    .pills{justify-content:flex-start}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none !important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Connexion -->
+  <section id="login-view" class="login hidden">
+    <span class="eyebrow">Espace privé</span>
+    <h1>Leads du diagnostic</h1>
+    <p class="muted" style="font-size:14px;margin:0 0 20px">Connecte-toi avec ton compte superadmin WRZ Ops.</p>
+    <form id="login-form">
+      <div class="field"><label for="email">Email</label><input id="email" type="email" autocomplete="username" required></div>
+      <div class="field"><label for="password">Mot de passe</label><input id="password" type="password" autocomplete="current-password" required></div>
+      <button class="btn" id="login-btn" type="submit">Se connecter</button>
+      <p class="error" id="login-error" role="alert"></p>
+    </form>
+  </section>
+
+  <!-- Tableau de bord -->
+  <section id="app-view" class="hidden">
+    <div class="head">
+      <div>
+        <span class="eyebrow">Diagnostic irritants · WRZ</span>
+        <h1>Tes leads</h1>
+        <div class="muted" style="font-size:13px" id="who"></div>
+      </div>
+      <div class="head-actions">
+        <button class="btn btn-ghost btn-sm" id="refresh-btn">Actualiser</button>
+        <button class="btn btn-ghost btn-sm" id="csv-btn">Export CSV</button>
+        <button class="btn btn-ghost btn-sm" id="logout-btn">Déconnexion</button>
+      </div>
+    </div>
+    <div class="stats" id="stats"></div>
+    <div class="filters" id="filters"></div>
+    <div id="list"></div>
+  </section>
+
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(function(){
+  const SUPABASE_URL = "https://cjlizuuaxucbpqykregv.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_V-liQ8IOYnAFOLFXwDuDTw_EMprVMq1"; // clé publique : sans session superadmin, elle ne donne accès à aucun lead
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  // v1 = questionnaire Poissy (4 catégories), v2 = questionnaire élargi (oct. 2026)
+  const CATS_V1 = [
+    { key:"administratif", label:"Administratif", color:"#E8A33D" },
+    { key:"tresorerie",    label:"Trésorerie & rentabilité", color:"#D9534F" },
+    { key:"visibilite",    label:"Visibilité & avis clients", color:"#4FAE8C" },
+    { key:"organisation",  label:"Organisation & charge de travail", color:"#8AA8E8" },
+  ];
+  const CATS_V2 = [
+    { key:"devis_factures", label:"Devis & factures", color:"#E8A33D" },
+    { key:"paiements",      label:"Paiements en retard", color:"#D9534F" },
+    { key:"pilotage",       label:"Rentabilité du mois", color:"#C9785B" },
+    { key:"clients_agenda", label:"RDV, appels & messages", color:"#8AA8E8" },
+    { key:"visibilite",     label:"Avis & visibilité en ligne", color:"#4FAE8C" },
+    { key:"stocks",         label:"Stocks & fournisseurs", color:"#A98BD9" },
+  ];
+  const isV2 = (l) => Number(l.form_version) === 2;
+  const catsFor = (l) => isV2(l)
+    ? CATS_V2.filter(c => !(c.key === "stocks" && l.stocks_concerne === false))
+    : CATS_V1;
+  const TAILLES = { solo:"Seul", "2-5":"2 à 5 pers.", "6-20":"6 à 20 pers.", "20+":"20+ pers." };
+  const OUTILS = { papier:"Papier", tableur:"Excel / Sheets", logiciel:"Logiciel métier", rien:"Rien (tout en tête)" };
+  const TEMPS = { lt2:"< 2 h/sem", "2-5":"2–5 h/sem", "5-10":"5–10 h/sem", "10+":"> 10 h/sem" };
+  const URGENCE = ["Sympa", "Vraiment utile", "Changerait son quotidien"];
+  const CANAUX = { email:"Email", telephone:"Téléphone", sms:"SMS" };
+  const STATUSES = {
+    a_recontacter:"À recontacter", contacte:"Contacté", en_discussion:"En discussion", client:"Client", pas_interesse:"Pas intéressé"
+  };
+  const SECTEURS = { commerce:"Commerce / boutique", artisanat:"Artisan / bâtiment", restauration:"Restauration / bouche", services:"Services à la personne", bien_etre:"Bien-être / services à la personne", liberal:"Libéral / indépendant", b2b:"Services aux entreprises", autre:"Autre" };
+  const PRIO = { chaud:["🔥 Chaud","p-chaud"], tiede:["🌤 Tiède","p-tiede"], froid:["❄️ Froid","p-froid"] };
+
+  let leads = [];
+  let filter = "all";
+
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const fmtDate = (d) => d ? new Date(d).toLocaleDateString("fr-FR",{day:"numeric",month:"short",year:"numeric"}) : "—";
+  const isDue = (l) => l.status === "a_recontacter" && l.follow_up_due_at && new Date(l.follow_up_due_at) <= new Date();
+
+  function toast(msg){
+    const t = $("toast"); t.textContent = msg; t.classList.add("show");
+    clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove("show"), 2200);
+  }
+
+  function show(view){
+    $("login-view").classList.toggle("hidden", view !== "login");
+    $("app-view").classList.toggle("hidden", view !== "app");
+  }
+
+  // ---------- Auth ----------
+  $("login-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const btn = $("login-btn"); btn.disabled = true; btn.textContent = "Connexion...";
+    $("login-error").textContent = "";
+    const { error } = await sb.auth.signInWithPassword({ email: $("email").value.trim(), password: $("password").value });
+    btn.disabled = false; btn.textContent = "Se connecter";
+    if (error) { $("login-error").textContent = "Email ou mot de passe incorrect."; return; }
+    $("password").value = "";
+    await boot();
+  });
+
+  $("logout-btn").onclick = async () => { await sb.auth.signOut(); leads = []; show("login"); };
+  $("refresh-btn").onclick = () => load(true);
+  $("csv-btn").onclick = exportCsv;
+
+  async function boot(){
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) { show("login"); return; }
+    $("who").textContent = "Connecté : " + session.user.email;
+    show("app");
+    await load();
+  }
+
+  // ---------- Données ----------
+  async function load(notify){
+    const { data, error } = await sb.rpc("get_diagnostic_leads");
+    if (error) {
+      if (/Accès refusé/.test(error.message)) {
+        await sb.auth.signOut();
+        show("login");
+        $("login-error").textContent = "Ce compte n'a pas les droits superadmin.";
+      } else {
+        $("list").innerHTML = `<div class="empty">Impossible de charger les leads : ${esc(error.message)}</div>`;
+      }
+      return;
+    }
+    leads = data || [];
+    render();
+    if (notify) toast("Leads à jour");
+  }
+
+  async function updateLead(id, fields){
+    const { data, error } = await sb.rpc("update_diagnostic_lead", { lead_id: id, ...fields });
+    if (error) { toast("Erreur : " + error.message); return; }
+    const i = leads.findIndex(l => l.id === id);
+    if (i >= 0 && data) leads[i] = data;
+    render();
+    toast("Enregistré");
+  }
+
+  async function deleteLead(id){
+    const l = leads.find(x => x.id === id);
+    if (!confirm(`Supprimer définitivement le lead « ${l?.prenom || "?"} — ${l?.commerce || ""} » ?`)) return;
+    const { error } = await sb.rpc("delete_diagnostic_lead", { lead_id: id });
+    if (error) { toast("Erreur : " + error.message); return; }
+    leads = leads.filter(x => x.id !== id);
+    render();
+    toast("Lead supprimé");
+  }
+
+  // ---------- Rendu ----------
+  function render(){
+    const chauds = leads.filter(l => l.priority === "chaud").length;
+    const todo = leads.filter(l => l.status === "a_recontacter").length;
+    const due = leads.filter(isDue).length;
+    $("stats").innerHTML = [
+      [leads.length, "Leads"], [chauds, "Chauds"], [todo, "À recontacter"], [due, "Relance due"]
+    ].map(([n,l]) => `<div class="stat"><div class="n">${n}</div><div class="l">${l}</div></div>`).join("");
+
+    const counts = { all: leads.length, due };
+    Object.keys(STATUSES).forEach(s => counts[s] = leads.filter(l => l.status === s).length);
+    const chips = [["all","Tous"],["due","Relance due"], ...Object.entries(STATUSES)];
+    $("filters").innerHTML = chips.map(([k,lab]) =>
+      `<button class="chip ${filter===k?"on":""}" data-filter="${k}">${lab} · ${counts[k] ?? 0}</button>`).join("");
+    $("filters").querySelectorAll(".chip").forEach(b => b.onclick = () => { filter = b.dataset.filter; render(); });
+
+    const shown = leads.filter(l => filter === "all" ? true : filter === "due" ? isDue(l) : l.status === filter);
+    if (!shown.length) {
+      $("list").innerHTML = `<div class="empty">${leads.length ? "Aucun lead dans ce filtre." : "Aucun lead pour l'instant. Ils apparaîtront ici dès que quelqu'un remplit le diagnostic."}</div>`;
+      return;
+    }
+    $("list").innerHTML = shown.map(cardHtml).join("");
+    wireCards();
+  }
+
+  function cardHtml(l){
+    const prio = PRIO[l.priority];
+    const ranked = [...catsFor(l)].sort((a,b) => (l[b.key] ?? 0) - (l[a.key] ?? 0));
+    const bars = ranked.map(c => {
+      const v = l[c.key] ?? 0;
+      return `<div><div class="bar-top"><b>${c.label}</b><span>${v}/3</span></div>
+        <div class="track"><div class="fill" style="width:${Math.round(v/3*100)}%;background:${c.color}"></div></div></div>`;
+    }).join("");
+    const statusOpts = Object.entries(STATUSES).map(([k,v]) => `<option value="${k}" ${l.status===k?"selected":""}>${v}</option>`).join("");
+    const contact = [
+      l.email ? `<a href="mailto:${esc(l.email)}">${esc(l.email)}</a>` : "",
+      l.telephone ? `<a href="tel:${esc(l.telephone)}">${esc(l.telephone)}</a>` : "",
+      l.secteur ? `<span class="muted">${esc(SECTEURS[l.secteur] || l.secteur)}</span>` : ""
+    ].filter(Boolean).join("<span class='muted'>·</span>");
+
+    // Profil (questionnaire v2 uniquement)
+    const profil = isV2(l) ? [
+      ["Équipe", TAILLES[l.taille]],
+      ["Outils", Array.isArray(l.outils) && l.outils.length ? l.outils.map(o => OUTILS[o] || o).join(", ") : ""],
+      ["Temps perdu", TEMPS[l.temps_perdu]],
+      ["Importance", l.urgence != null ? URGENCE[l.urgence] : ""],
+      ["CP", l.code_postal],
+      ["Préfère", CANAUX[l.canal]],
+    ].filter(([,v]) => v).map(([k,v]) => `<span class="tag"><em>${k}</em>${esc(v)}</span>`).join("") : "";
+    const stocksNa = isV2(l) && l.stocks_concerne === false ? `<div class="meta" style="margin:-8px 0 12px">Stocks : pas concerné</div>` : "";
+
+    return `
+    <article class="lead" data-id="${esc(l.id)}">
+      <div class="lead-top">
+        <div>
+          <div class="lead-name">${esc(l.prenom || "Sans nom")}</div>
+          <div class="lead-sub">${esc(l.commerce || "")}</div>
+          <div class="lead-contact">${contact}</div>
+        </div>
+        <div class="pills">
+          ${prio ? `<span class="pill ${prio[1]}">${prio[0]}</span>` : ""}
+          <span class="pill p-status">${STATUSES[l.status] || esc(l.status)}</span>
+          ${isDue(l) ? `<span class="pill p-due">Relance due</span>` : ""}
+        </div>
+      </div>
+      ${profil ? `<div class="tags">${profil}</div>` : ""}
+      <div class="bars">${bars}</div>
+      ${stocksNa}
+      ${l.open_text ? `<div class="quote">« ${esc(l.open_text)} »</div>` : ""}
+      <div class="edit-grid">
+        <div>
+          <label>Statut</label>
+          <select class="f-status">${statusOpts}</select>
+        </div>
+        <div>
+          <label>Brouillon de relance</label>
+          <textarea class="f-draft" placeholder="Pas de brouillon généré">${esc(l.draft_followup || "")}</textarea>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-sm a-save">Enregistrer</button>
+        <button class="btn btn-ghost btn-sm a-copy">Copier le brouillon</button>
+        ${l.contacted_at ? "" : `<button class="btn btn-ghost btn-sm a-contacted">Marquer contacté</button>`}
+        <button class="btn btn-danger btn-sm a-delete" style="margin-left:auto">Supprimer</button>
+      </div>
+      <div class="meta">Reçu le ${fmtDate(l.created_at)} · Relance prévue ${fmtDate(l.follow_up_due_at)}${l.contacted_at ? " · Contacté le " + fmtDate(l.contacted_at) : ""}</div>
+    </article>`;
+  }
+
+  function wireCards(){
+    document.querySelectorAll(".lead").forEach(card => {
+      const id = card.dataset.id;
+      card.querySelector(".a-save").onclick = () => updateLead(id, {
+        new_status: card.querySelector(".f-status").value,
+        new_draft: card.querySelector(".f-draft").value
+      });
+      card.querySelector(".a-copy").onclick = async () => {
+        const txt = card.querySelector(".f-draft").value;
+        if (!txt) { toast("Brouillon vide"); return; }
+        try { await navigator.clipboard.writeText(txt); toast("Brouillon copié"); } catch { toast("Copie impossible"); }
+      };
+      const c = card.querySelector(".a-contacted");
+      if (c) c.onclick = () => updateLead(id, {
+        mark_contacted: true,
+        new_status: card.querySelector(".f-status").value === "a_recontacter" ? "contacte" : card.querySelector(".f-status").value
+      });
+      card.querySelector(".a-delete").onclick = () => deleteLead(id);
+    });
+  }
+
+  // ---------- Export ----------
+  function exportCsv(){
+    if (!leads.length) { toast("Rien à exporter"); return; }
+    const cols = ["created_at","form_version","prenom","commerce","secteur","taille","outils","email","telephone","code_postal","canal",
+      "devis_factures","paiements","pilotage","clients_agenda","visibilite","stocks","stocks_concerne","temps_perdu","urgence",
+      "administratif","tresorerie","organisation","open_text","priority","priority_score","status","draft_followup","contacted_at"];
+    const cell = (v) => {
+      let s = String(v ?? "");
+      if (/^[=+\-@]/.test(s)) s = "'" + s; // évite l'injection de formules dans Excel
+      return '"' + s.replace(/"/g,'""') + '"';
+    };
+    const csv = "﻿" + [cols.join(";"), ...leads.map(l => cols.map(c => cell(l[c])).join(";"))].join("\n");
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([csv], { type:"text/csv;charset=utf-8" }));
+    a.download = `leads-diagnostic-${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  sb.auth.onAuthStateChange((event) => { if (event === "SIGNED_OUT") show("login"); });
+  boot();
+})();
+</script>
+</body>
+</html>
