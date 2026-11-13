@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Diagnostic opérations — WRZ Ops</title>
+<meta name="description" content="3 minutes pour identifier ce qui ralentit vos opérations : demandes entrantes, procédures, interventions, reporting. Diagnostic gratuit WRZ Ops.">
+<meta property="og:title" content="Diagnostic opérations — WRZ Ops">
+<meta property="og:description" content="3 minutes pour identifier ce qui ralentit vos opérations. Gratuit, sans engagement.">
+<meta property="og:image" content="https://wrz-digital.com/og-image.png">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<meta name="theme-color" content="#0a0c10">
+<style>
+@font-face { font-family: 'Syne'; src: url(/fonts/syne.woff2) format('woff2'); font-weight: 400 800; font-display: swap; }
+@font-face { font-family: 'DM Mono'; src: url(/fonts/dmmono-regular.woff2) format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'DM Mono'; src: url(/fonts/dmmono-medium.woff2) format('woff2'); font-weight: 500; font-display: swap; }
+:root{
+  --bg:#0a0c10; --bg2:#12151c; --bg3:#171b24; --bg4:#1d2230;
+  --border:rgba(255,255,255,.08); --border2:rgba(255,255,255,.15);
+  --accent:#00e0a0; --accent-dim:rgba(0,224,160,.12); --accent2:#0088ff;
+  --text:#e7e9f3; --text2:#8890a8; --text3:#454b62; --err:#ff6b6b;
+  --display:'Syne',system-ui,sans-serif; --mono:'DM Mono',ui-monospace,Consolas,monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--display);line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:linear-gradient(to right,rgba(255,255,255,.028) 1px,transparent 1px),linear-gradient(to bottom,rgba(255,255,255,.028) 1px,transparent 1px);
+  background-size:56px 56px;mask-image:radial-gradient(ellipse 80% 60% at 50% 0%,black 0%,transparent 75%)}
+.glow{position:fixed;top:-220px;left:50%;transform:translateX(-50%);width:820px;height:520px;border-radius:50%;
+  background:radial-gradient(ellipse at center,rgba(0,224,160,.14),transparent 68%);pointer-events:none;z-index:0}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit}
+.top{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;max-width:620px;width:100%;margin:0 auto;padding:22px 20px 0}
+.brand{display:flex;align-items:center;gap:10px}
+.mark{width:28px;height:28px;border-radius:8px;background:var(--bg3);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center}
+.mark span{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent)}
+.brand strong{font-size:14px;letter-spacing:.06em}
+.back{font-family:var(--mono);font-size:12px;color:var(--text2);background:none;border:none;cursor:pointer;visibility:hidden}
+.back:hover{color:var(--accent)}
+main{position:relative;z-index:1;flex:1;display:flex;align-items:flex-start;justify-content:center;padding:28px 20px 48px}
+.shell{width:100%;max-width:560px}
+.progress{display:flex;align-items:center;gap:12px;font-family:var(--mono);font-size:10.5px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:14px;visibility:hidden}
+.bar{flex:1;height:4px;background:var(--bg4);border-radius:4px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--accent);box-shadow:0 0 10px var(--accent);transition:width .35s ease}
+.card{background:var(--bg2);border:1px solid var(--border2);border-radius:16px;padding:30px 28px;box-shadow:0 40px 80px -30px rgba(0,0,0,.7);animation:in .35s ease}
+@keyframes in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.card{animation:none}.bar i{transition:none}}
+.eyebrow{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.14em;color:var(--accent);text-transform:uppercase;display:inline-flex;align-items:center;gap:8px;margin-bottom:12px}
+.eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent)}
+h1{font-size:clamp(26px,5vw,34px);font-weight:700;line-height:1.12;letter-spacing:-.01em;margin-bottom:12px}
+h1 em{font-style:normal;color:var(--accent)}
+h2{font-size:21px;font-weight:700;line-height:1.25;margin-bottom:6px}
+.sub{color:var(--text2);font-size:14.5px;margin-bottom:22px}
+.opts{display:flex;flex-direction:column;gap:9px}
+.opt{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;width:100%;padding:13px 16px;border-radius:10px;
+  background:var(--bg3);border:1px solid var(--border);color:var(--text);font-size:14.5px;font-weight:600;cursor:pointer;transition:border-color .15s,background .15s}
+.opt small{font-family:var(--mono);font-size:11px;font-weight:400;color:var(--text2)}
+.opt:hover{border-color:var(--border2);background:var(--bg4)}
+.opt.sel{border-color:var(--accent);background:var(--accent-dim)}
+.opt:focus-visible,.btn:focus-visible,.chip:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:18px;padding:14px 22px;border-radius:9px;border:1px solid transparent;
+  font-family:var(--mono);font-size:13px;font-weight:500;letter-spacing:.04em;cursor:pointer;background:var(--accent);color:#05130f;transition:opacity .15s}
+.btn:hover{opacity:.88}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.trust{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:16px;font-family:var(--mono);font-size:11px;color:var(--text3)}
+.trust span::before{content:'· '}
+label.f{display:block;font-family:var(--mono);font-size:11px;color:var(--text2);letter-spacing:.06em;text-transform:uppercase;margin:14px 0 6px}
+label.f .opt-l{text-transform:none;letter-spacing:normal;color:var(--text3)}
+input[type=text],input[type=email],input[type=tel],textarea{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;color:var(--text);font-family:var(--display);font-size:14.5px;padding:11px 13px}
+input:focus,textarea:focus{outline:none;border-color:var(--accent)}
+textarea{resize:vertical;min-height:96px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:480px){.row2{grid-template-columns:1fr}}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{padding:8px 14px;border-radius:20px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-family:var(--mono);font-size:12px;cursor:pointer}
+.chip.sel{border-color:var(--accent);color:var(--accent);background:var(--accent-dim)}
+.consent{display:flex;gap:10px;align-items:flex-start;margin-top:16px;font-size:12.5px;color:var(--text2);cursor:pointer}
+.consent input{margin-top:3px;accent-color:var(--accent)}
+.err{font-family:var(--mono);font-size:12px;color:var(--err);margin-top:10px;min-height:16px}
+.res-row{margin:12px 0}
+.res-top{display:flex;justify-content:space-between;font-size:13.5px;font-weight:600;margin-bottom:5px}
+.res-top span:last-child{font-family:var(--mono);font-weight:400;color:var(--text2)}
+.res-bar{height:8px;background:var(--bg4);border-radius:6px;overflow:hidden}
+.res-bar i{display:block;height:100%;border-radius:6px}
+.hot{margin-top:22px;padding:16px 18px;border-radius:10px;background:var(--accent-dim);border:1px solid rgba(0,224,160,.3)}
+.hot .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:6px}
+.hot p{font-size:14px;line-height:1.55}
+.after{color:var(--text2);font-size:13px;margin-top:18px;line-height:1.6}
+.after a{color:var(--accent)}
+footer{position:relative;z-index:1;text-align:center;font-family:var(--mono);font-size:11px;color:var(--text3);padding:0 20px 26px}
+footer a:hover{color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="glow"></div>
+<div class="top">
+  <a class="brand" href="/"><div class="mark"><span></span></div><strong>WRZ OPS</strong></a>
+  <button class="back" id="back" type="button">← retour</button>
+</div>
+
+<main>
+  <div class="shell">
+    <div class="progress" id="progress"><span id="plabel">Diagnostic</span><div class="bar"><i id="pbar"></i></div><span id="ppct">0%</span></div>
+    <div id="view"></div>
+  </div>
+</main>
+
+<footer>© 2026 WRZ Digital — <a href="/">WRZ Ops</a> · Vos réponses restent confidentielles.</footer>
+
+<script>
+(function(){
+  // ── Config Supabase (clé publique « anon », insertion seule autorisée par RLS) ──
+  var SUPABASE_URL = 'https://cjlizuuaxucbpqykregv.supabase.co';
+  var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNqbGl6dXVheHVjYnBxeWtyZWd2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0OTQ1MDMsImV4cCI6MjA5NjA3MDUwM30.J0iCxAfrsmU3n5Yyjo1rffEhFTMcvTzxjrV3Ybtbisg';
+  var FORM_VERSION = 3;
+
+  var LEVELS = [
+    { v:0, t:'Ça roule', s:'rien à signaler' },
+    { v:1, t:'Gênant de temps en temps', s:'mais ça reste gérable' },
+    { v:2, t:'Ça pèse chaque semaine', s:'du temps et de l’énergie perdus' },
+    { v:3, t:'Point noir', s:'ça bloque l’équipe' }
+  ];
+
+  var CATS = [
+    { key:'demandes_entrantes', label:'Demandes entrantes', color:'#00e0a0',
+      q:'Traiter les demandes entrantes', d:'Mails, appels, messages de clients ou de locataires à lire, trier et répondre.',
+      tip:'Un agent qui lit chaque demande entrante, la classe par urgence et vous propose une réponse prête à valider.' },
+    { key:'procedures', label:'Procédures & info', color:'#0088ff',
+      q:'Retrouver la bonne info au bon moment', d:'La procédure, le contrat, l’historique d’un site… quelque part dans un PDF ou dans la tête de quelqu’un.',
+      tip:'Un agent qui a lu vos documents et répond en citant la bonne procédure, sur le terrain comme au bureau.' },
+    { key:'interventions', label:'Interventions', color:'#ffaa00',
+      q:'Planifier et suivre les interventions', d:'Qui passe quand, chez qui, ce qui a été fait, ce qui reste à faire.',
+      tip:'Un suivi des interventions centralisé, avec des rappels automatiques aux bonnes personnes.' },
+    { key:'reporting', label:'Comptes rendus & reporting', color:'#a78bfa',
+      q:'Produire les comptes rendus et rapports', d:'Rapports d’activité, comptes rendus de visite, tableaux pour la direction ou les copropriétaires.',
+      tip:'Des comptes rendus et rapports générés à partir de vos données, prêts à relire et envoyer.' },
+    { key:'relances', label:'Relances', color:'#ff6b6b',
+      q:'Relancer prestataires, clients et validations', d:'Devis en attente, prestataires silencieux, validations qui traînent.',
+      tip:'Des relances automatiques et polies, au bon moment, sans que vous ayez à y penser.' },
+    { key:'transmission', label:'Dépendance & transmission', color:'#38bdf8',
+      q:'Ne pas dépendre d’une seule personne', d:'Quand un collègue clé est absent, tout ralentit. Former un nouveau prend des semaines.',
+      tip:'Une base de connaissances vivante : chaque nouvel arrivant pose ses questions à l’agent plutôt qu’à vos meilleurs éléments.' }
+  ];
+
+  var SECTEURS = [
+    { v:'immobilier', t:'Agence immobilière / gestion locative' },
+    { v:'syndic', t:'Syndic de copropriété / administrateur de biens' },
+    { v:'patrimoine', t:'Bailleur / gestion technique de patrimoine' },
+    { v:'facility', t:'Maintenance / multitechnique / facility management' },
+    { v:'btp', t:'BTP / artisan avec équipe' },
+    { v:'pme_technique', t:'PME industrielle ou technique' },
+    { v:'autre', t:'Autre' }
+  ];
+  var TAILLES = [{v:'solo',t:'Seul(e)'},{v:'2-5',t:'2 à 5 personnes'},{v:'6-20',t:'6 à 20 personnes'},{v:'20+',t:'Plus de 20'}];
+  var OUTILS = [{v:'mails',t:'La boîte mail, surtout'},{v:'tableur',t:'Excel ou Google Sheets'},{v:'logiciel',t:'Un logiciel métier (GMAO, logiciel de gestion…)'},{v:'papier',t:'Papier / carnet'},{v:'rien',t:'Rien de structuré, tout est dans les têtes'}];
+  var TEMPS = [{v:'lt2',t:'Moins de 2 h'},{v:'2-5',t:'2 à 5 h'},{v:'5-10',t:'5 à 10 h'},{v:'10+',t:'Plus de 10 h'}];
+  var URGENCE = [{v:0,t:'Sympa'},{v:1,t:'Vraiment utile'},{v:2,t:'Ça changerait le quotidien de l’équipe'}];
+
+  var A = { outils:[], canal:'email' };
+  var steps = [];
+  var idx = 0;
+
+  steps.push({ type:'intro' });
+  steps.push({ type:'single', key:'secteur', group:'Profil · 1 / 3', title:'Votre activité', sub:'Pour vous parler de vos vrais sujets, pas de ceux d’un autre métier.', opts:SECTEURS });
+  steps.push({ type:'single', key:'taille', group:'Profil · 2 / 3', title:'Vous êtes combien dans l’équipe ?', sub:'Vous compris.', opts:TAILLES });
+  steps.push({ type:'multi', key:'outils', group:'Profil · 3 / 3', title:'Aujourd’hui, tout ça passe par…', sub:'Plusieurs réponses possibles.', opts:OUTILS });
+  CATS.forEach(function(c, i){
+    steps.push({ type:'level', key:c.key, group:'Vos points de friction · ' + (i+1) + ' / ' + CATS.length, title:c.q, sub:c.d + ' À quel point ça pèse ?' });
+  });
+  steps.push({ type:'single', key:'temps_perdu', group:'Presque fini', title:'Tout ça vous coûte combien de temps par semaine ?', sub:'Pour toute l’équipe, une estimation suffit.', opts:TEMPS });
+  steps.push({ type:'single', key:'urgence', group:'Presque fini', title:'Si votre plus gros point de friction disparaissait demain, ce serait…', sub:'', opts:URGENCE });
+  steps.push({ type:'text' });
+  steps.push({ type:'contact' });
+
+  var view = document.getElementById('view');
+  var backBtn = document.getElementById('back');
+  var prog = document.getElementById('progress');
+
+  function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]; }); }
+
+  function setProgress(){
+    var total = steps.length - 1;
+    var pct = idx === 0 ? 0 : Math.round(idx / total * 100);
+    prog.style.visibility = idx === 0 ? 'hidden' : 'visible';
+    backBtn.style.visibility = (idx > 0 && steps[idx].type !== 'result') ? 'visible' : 'hidden';
+    document.getElementById('pbar').style.width = pct + '%';
+    document.getElementById('ppct').textContent = pct + '%';
+  }
+
+  function go(n){ idx = n; render(); window.scrollTo({top:0,behavior:'smooth'}); }
+  function next(){ go(Math.min(idx + 1, steps.length - 1)); }
+  backBtn.addEventListener('click', function(){ if (idx > 0) go(idx - 1); });
+
+  function card(html){ view.innerHTML = '<div class="card">' + html + '</div>'; }
+
+  function render(){
+    setProgress();
+    var s = steps[idx];
+    if (s.type === 'intro') {
+      card(
+        '<span class="eyebrow"><span class="dot"></span>Diagnostic opérations · 3 minutes</span>' +
+        '<h1>Qu’est-ce qui ralentit <em>vraiment</em> vos opérations ?</h1>' +
+        '<p class="sub">Demandes qui s’accumulent, procédures introuvables, relances, comptes rendus… 12 questions, presque toutes en un clic, pour voir où votre équipe perd le plus de temps — et repartir avec une première piste concrète.</p>' +
+        '<button class="btn" id="start">Commencer le diagnostic →</button>' +
+        '<div class="trust"><span>Gratuit</span><span>Sans engagement</span><span>Réponses confidentielles</span></div>'
+      );
+      document.getElementById('start').onclick = next;
+      return;
+    }
+    if (s.type === 'single' || s.type === 'multi' || s.type === 'level') {
+      var opts = s.type === 'level' ? LEVELS.map(function(l){ return { v:l.v, t:l.t, s:l.s }; }) : s.opts;
+      var html = '<span class="eyebrow"><span class="dot"></span>' + esc(s.group) + '</span><h2>' + esc(s.title) + '</h2>' +
+        (s.sub ? '<p class="sub">' + esc(s.sub) + '</p>' : '<div style="height:14px"></div>') + '<div class="opts">';
+      opts.forEach(function(o, i){
+        var sel = s.type === 'multi' ? A.outils.indexOf(o.v) > -1 : A[s.key] === o.v;
+        html += '<button type="button" class="opt' + (sel ? ' sel' : '') + '" data-i="' + i + '">' + esc(o.t) + (o.s ? '<small>' + esc(o.s) + '</small>' : '') + '</button>';
+      });
+      html += '</div>';
+      if (s.type === 'multi') html += '<button class="btn" id="cont"' + (A.outils.length ? '' : ' disabled') + '>Continuer →</button>';
+      card(html);
+      view.querySelectorAll('.opt').forEach(function(b){
+        b.addEventListener('click', function(){
+          var o = opts[+b.getAttribute('data-i')];
+          if (s.type === 'multi') {
+            var k = A.outils.indexOf(o.v);
+            if (k > -1) A.outils.splice(k, 1); else A.outils.push(o.v);
+            b.classList.toggle('sel');
+            document.getElementById('cont').disabled = !A.outils.length;
+          } else {
+            A[s.key] = o.v;
+            view.querySelectorAll('.opt').forEach(function(x){ x.classList.remove('sel'); });
+            b.classList.add('sel');
+            setTimeout(next, 180);
+          }
+        });
+      });
+      if (s.type === 'multi') document.getElementById('cont').onclick = next;
+      return;
+    }
+    if (s.type === 'text') {
+      card(
+        '<span class="eyebrow"><span class="dot"></span>Pour finir</span>' +
+        '<h2>En une phrase : qu’est-ce qui fait perdre le plus de temps à votre équipe aujourd’hui ?</h2>' +
+        '<p class="sub">Optionnel, mais c’est souvent la réponse la plus utile.</p>' +
+        '<textarea id="ot" placeholder="Ex : on passe nos lundis matin à trier les demandes des locataires du week-end…">' + esc(A.open_text || '') + '</textarea>' +
+        '<button class="btn" id="cont">Continuer →</button>'
+      );
+      document.getElementById('cont').onclick = function(){ A.open_text = document.getElementById('ot').value.trim(); next(); };
+      return;
+    }
+    if (s.type === 'contact') {
+      card(
+        '<span class="eyebrow"><span class="dot"></span>Dernière étape</span>' +
+        '<h2>Où vous envoyer votre diagnostic ?</h2>' +
+        '<p class="sub">Vous voyez vos résultats tout de suite. On revient ensuite vers vous sous deux semaines avec une piste concrète, pensée pour votre organisation. Pas de démarchage.</p>' +
+        '<form id="cf" novalidate>' +
+        '<div class="row2"><div><label class="f" for="prenom">Prénom</label><input id="prenom" type="text" autocomplete="given-name" required></div>' +
+        '<div><label class="f" for="commerce">Entreprise</label><input id="commerce" type="text" autocomplete="organization" required></div></div>' +
+        '<label class="f" for="email">Email pro</label><input id="email" type="email" autocomplete="email" required>' +
+        '<div class="row2"><div><label class="f" for="tel">Téléphone <span class="opt-l">(optionnel)</span></label><input id="tel" type="tel" autocomplete="tel"></div>' +
+        '<div><label class="f" for="cp">Code postal</label><input id="cp" type="text" inputmode="numeric" autocomplete="postal-code" maxlength="5"></div></div>' +
+        '<label class="f">On vous recontacte plutôt par…</label><div class="chips">' +
+          ['email','telephone','sms'].map(function(c){ var t = {email:'Email',telephone:'Téléphone',sms:'SMS'}[c]; return '<button type="button" class="chip' + (A.canal === c ? ' sel' : '') + '" data-c="' + c + '">' + t + '</button>'; }).join('') +
+        '</div>' +
+        '<label class="consent"><input type="checkbox" id="consent"> J’accepte d’être recontacté(e) au sujet de ce diagnostic. Pas de spam, pas de revente de données.</label>' +
+        '<button class="btn" id="send" type="submit">Voir mon diagnostic →</button><div class="err" id="err" role="status" aria-live="polite"></div>' +
+        '</form>'
+      );
+      view.querySelectorAll('.chip').forEach(function(c){
+        c.addEventListener('click', function(){ A.canal = c.getAttribute('data-c'); view.querySelectorAll('.chip').forEach(function(x){ x.classList.remove('sel'); }); c.classList.add('sel'); });
+      });
+      document.getElementById('cf').addEventListener('submit', submit);
+      return;
+    }
+    if (s.type === 'result') renderResult();
+  }
+
+  async function submit(e){
+    e.preventDefault();
+    var err = document.getElementById('err');
+    var btn = document.getElementById('send');
+    var prenom = document.getElementById('prenom').value.trim();
+    var commerce = document.getElementById('commerce').value.trim();
+    var email = document.getElementById('email').value.trim();
+    var tel = document.getElementById('tel').value.trim();
+    var cp = document.getElementById('cp').value.trim();
+    var consent = document.getElementById('consent').checked;
+    err.textContent = '';
+    if (!prenom || !commerce) { err.textContent = 'Merci d’indiquer votre prénom et votre entreprise.'; return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { err.textContent = 'Cet email ne semble pas valide.'; return; }
+    if ((A.canal === 'telephone' || A.canal === 'sms') && !tel) { err.textContent = 'Indiquez un numéro pour être recontacté par ' + (A.canal === 'sms' ? 'SMS' : 'téléphone') + '.'; return; }
+    if (!consent) { err.textContent = 'Merci de cocher la case pour qu’on puisse vous recontacter.'; return; }
+
+    var payload = {
+      form_version: FORM_VERSION,
+      secteur: A.secteur, taille: A.taille, outils: A.outils,
+      temps_perdu: A.temps_perdu, urgence: A.urgence,
+      open_text: A.open_text || '',
+      prenom: prenom, commerce: commerce, email: email, telephone: tel,
+      code_postal: cp, canal: A.canal, consent: true
+    };
+    CATS.forEach(function(c){ payload[c.key] = A[c.key]; });
+
+    btn.disabled = true; btn.textContent = 'Envoi…';
+    try {
+      var res = await fetch(SUPABASE_URL + '/rest/v1/diagnostic_leads', {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json', 'apikey':SUPABASE_ANON_KEY, 'Authorization':'Bearer ' + SUPABASE_ANON_KEY, 'Prefer':'return=minimal' },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error(await res.text());
+      A.prenom = prenom;
+      steps.push({ type:'result' });
+      go(steps.length - 1);
+    } catch (x) {
+      console.error(x);
+      err.textContent = 'Oups, l’envoi a échoué. Réessayez ou écrivez-nous à contact@wrz-digital.com.';
+      btn.disabled = false; btn.textContent = 'Voir mon diagnostic →';
+    }
+  }
+
+  function renderResult(){
+    var ranked = CATS.slice().sort(function(a, b){ return (A[b.key] || 0) - (A[a.key] || 0); });
+    var top = ranked[0];
+    var tempsTxt = ({lt2:'moins de 2 h','2-5':'2 à 5 h','5-10':'5 à 10 h','10+':'plus de 10 h'})[A.temps_perdu] || '';
+    var bars = ranked.map(function(c){
+      var pct = Math.round((A[c.key] || 0) / 3 * 100);
+      return '<div class="res-row"><div class="res-top"><span>' + esc(c.label) + '</span><span>' + pct + '%</span></div>' +
+        '<div class="res-bar"><i style="width:' + pct + '%;background:' + c.color + '"></i></div></div>';
+    }).join('');
+    var allZero = ranked.every(function(c){ return !A[c.key]; });
+    card(
+      '<span class="eyebrow"><span class="dot"></span>Votre diagnostic</span>' +
+      '<h2>Merci ' + esc(A.prenom) + ', voici ce qui ressort</h2>' +
+      '<p class="sub">Une photo de ce qui pèse le plus sur vos opérations' + (tempsTxt ? ', pour <strong style="color:var(--text)">' + tempsTxt + '</strong> par semaine à l’échelle de l’équipe' : '') + '.</p>' +
+      bars +
+      (allZero
+        ? '<div class="hot"><div class="k">Bonne nouvelle</div><p>Vos opérations semblent bien rodées. On reste disponibles si un sujet émerge.</p></div>'
+        : '<div class="hot"><div class="k">Votre point le plus chaud</div><p><strong>' + esc(top.label) + '</strong> — ' + esc(top.tip) + '</p></div>') +
+      '<p class="after">On repart avec tout ça et on revient vers vous sous deux semaines avec une piste concrète. Pas de pitch, pas de pression.<br>En attendant, découvrez <a href="/">WRZ Ops</a>.</p>'
+    );
+  }
+
+  render();
+})();
+</script>
+<!-- Vercel Web Analytics -->
+<script>window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };</script>
+<script defer src="/_vercel/insights/script.js"></script>
+</body>
+</html>
