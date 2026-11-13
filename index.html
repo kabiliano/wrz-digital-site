@@ -280,6 +280,22 @@ section { position: relative; z-index: 1; padding: 88px 0; }
 .cf-status.ok { color: var(--accent); }
 .cf-status.err { color: #ff6b6b; }
 
+/* ── DIAGNOSTIC CTA ── */
+.nav-links a.nav-diag { color: var(--accent); }
+.nav-links a { white-space: nowrap; }
+.nav-brand strong { white-space: nowrap; }
+.nav-links { gap: 26px; }
+.nav-links a[href="#probleme"] { display: none; } /* place pour « Diagnostic » ; la section suit directement le hero */
+@media (max-width: 1040px) { .nav-links a[href="#fonctionnalites"], .nav-links a[href="#comment"], .nav-links a[href="#faq"] { display: none; } }
+.diag-cta {
+  background: linear-gradient(135deg, rgba(0,224,160,.10), rgba(0,136,255,.06));
+  border: 1px solid rgba(0,224,160,.28); border-radius: var(--radius);
+  padding: 40px; display: grid; grid-template-columns: 1fr auto; gap: 32px; align-items: center;
+}
+.diag-cta h2 { font-size: clamp(24px, 2.8vw, 32px); font-weight: 700; margin: 14px 0 10px; }
+.diag-cta p { color: var(--text2); font-size: 15px; max-width: 58ch; }
+@media (max-width: 760px) { .diag-cta { grid-template-columns: 1fr; padding: 28px; } .diag-cta .btn { width: 100%; } }
+
 /* ── FOOTER ── */
 footer { border-top: 1px solid var(--border); padding: 44px 0 36px; }
 .footer-grid { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; flex-wrap: wrap; }
@@ -308,6 +324,7 @@ footer { border-top: 1px solid var(--border); padding: 44px 0 36px; }
       <a href="#comment">Comment ça marche</a>
       <a href="/tarifs/">Tarifs</a>
       <a href="#faq">FAQ</a>
+      <a href="/diagnostic-ops" class="nav-diag">Diagnostic</a>
     </div>
     <div class="nav-cta">
       <a class="btn btn-ghost btn-sm" href="#contact">Parler à un expert</a>
@@ -496,6 +513,24 @@ footer { border-top: 1px solid var(--border); padding: 44px 0 36px; }
   </div>
 </section>
 
+<section id="diagnostic">
+  <div class="wrap">
+    <div class="diag-cta reveal">
+      <div>
+        <span class="eyebrow"><span class="dot"></span>Diagnostic gratuit · 3 minutes</span>
+        <h2>Où votre équipe perd-elle le plus de temps ?</h2>
+        <p>Demandes entrantes, procédures introuvables, suivi des interventions, comptes rendus, relances… 12 questions, presque toutes en un clic, pour voir ce qui pèse le plus chez vous — avec une première piste concrète à la clé.</p>
+        <div class="hero-trust" style="margin-top:18px;">
+          <span>Résultat immédiat</span>
+          <span>Sans engagement</span>
+          <span>Réponses confidentielles</span>
+        </div>
+      </div>
+      <a class="btn btn-primary" href="/diagnostic-ops">Faire le diagnostic →</a>
+    </div>
+  </div>
+</section>
+
 <section id="contact">
   <div class="wrap">
     <div class="contact-grid">
@@ -542,6 +577,7 @@ footer { border-top: 1px solid var(--border); padding: 44px 0 36px; }
         <strong>WRZ OPS</strong>
       </div>
       <div class="footer-links">
+        <a href="/diagnostic-ops">Diagnostic gratuit</a>
         <a href="https://ops.wrz-digital.com" target="_blank" rel="noopener">Ouvrir l'app</a>
         <a href="https://www.wrz-digital.com" target="_blank" rel="noopener">WRZ Digital</a>
         <a href="mailto:contact@wrz-digital.com">contact@wrz-digital.com</a>
