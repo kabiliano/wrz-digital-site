@@ -1,5 +1,36 @@
 const TO_EMAIL = 'leo.tounsi9@gmail.com';
 const FROM_EMAIL = 'WRZ Ops <formulaire@send.wrz-digital.com>';
+// CRM (table diagnostic_leads) : clé publique « anon », l'insertion seule est autorisée par RLS
+const SUPABASE_URL = 'https://cjlizuuaxucbpqykregv.supabase.co';
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNqbGl6dXVheHVjYnBxeWtyZWd2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0OTQ1MDMsImV4cCI6MjA5NjA3MDUwM30.J0iCxAfrsmU3n5Yyjo1rffEhFTMcvTzxjrV3Ybtbisg';
+
+// Enregistre la demande dans le CRM, source « contact ». N'empêche jamais l'envoi du mail.
+async function saveToCrm({ name, email, company, message }) {
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/diagnostic_leads`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        Prefer: 'return=minimal'
+      },
+      body: JSON.stringify({
+        source: 'contact',
+        form_version: 0,
+        prenom: String(name).slice(0, 200),
+        commerce: company ? String(company).slice(0, 200) : null,
+        email: String(email).slice(0, 200),
+        open_text: String(message).slice(0, 5000),
+        consent: true,
+        canal: 'email'
+      })
+    });
+    if (!r.ok) console.error('CRM insert error:', r.status, await r.text());
+  } catch (err) {
+    console.error('CRM insert failed:', err);
+  }
+}
 
 function escapeHtml(str) {
   return String(str).replace(/[&<>"']/g, (c) => ({
@@ -22,6 +53,8 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Adresse email invalide.' });
   }
 
+  await saveToCrm({ name, email, company, message });
+
   try {
     const r = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -40,6 +73,7 @@ export default async function handler(req, res) {
           ${company ? `<p><strong>Entreprise :</strong> ${escapeHtml(company)}</p>` : ''}
           <p><strong>Message :</strong></p>
           <p>${escapeHtml(message).replace(/\n/g, '<br>')}</p>
+          <p style="color:#888;font-size:12px">Enregistré dans le CRM (source : Contact site) — un brouillon de réponse y est préparé : https://wrz-digital.com/diagnostic/admin.html</p>
         `
       })
     });

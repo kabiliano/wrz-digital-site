@@ -63,6 +63,8 @@
   .pill{display:inline-block;padding:4px 10px;border-radius:99px;font-size:11.5px;font-family:var(--mono);font-weight:500;white-space:nowrap}
   .p-chaud{background:rgba(217,83,79,.15);color:var(--alert)}
   .p-ops{background:rgba(0,224,160,.15);color:#00C896}
+  .p-src-diag{background:rgba(232,163,61,.15);color:#E8A33D}
+  .p-src-contact{background:rgba(79,155,255,.15);color:#4F9BFF}
   .p-tiede{background:var(--accent-soft);color:var(--accent)}
   .p-froid{background:rgba(138,168,232,.15);color:var(--cold)}
   .p-status{background:rgba(244,245,247,.07);color:var(--fg)}
@@ -123,6 +125,7 @@
       </div>
     </div>
     <div class="stats" id="stats"></div>
+    <div class="filters" id="src-filters" style="margin-bottom:8px"></div>
     <div class="filters" id="filters"></div>
     <div id="list"></div>
   </section>
@@ -163,7 +166,16 @@
   const isV2 = (l) => Number(l.form_version) === 2;
   const isV3 = (l) => Number(l.form_version) === 3;
   const isQualified = (l) => Number(l.form_version) >= 2;
-  const catsFor = (l) => isV3(l) ? CATS_V3 : isV2(l)
+  // Canal d'origine du lead
+  const SOURCES = {
+    diagnostic:     { label:"Diag commerces", cls:"p-src-diag" },
+    diagnostic_ops: { label:"Diag WRZ Ops",   cls:"p-ops" },
+    contact:        { label:"Contact site",   cls:"p-src-contact" },
+  };
+  const sourceOf = (l) => l.source || (isV3(l) ? "diagnostic_ops" : "diagnostic");
+  const isContact = (l) => sourceOf(l) === "contact";
+  let sourceFilter = "all";
+  const catsFor = (l) => isContact(l) ? [] : isV3(l) ? CATS_V3 : isV2(l)
     ? CATS_V2.filter(c => !(c.key === "stocks" && l.stocks_concerne === false))
     : CATS_V1;
   const TAILLES = { solo:"Seul", "2-5":"2 à 5 pers.", "6-20":"6 à 20 pers.", "20+":"20+ pers." };
@@ -274,7 +286,15 @@
       `<button class="chip ${filter===k?"on":""}" data-filter="${k}">${lab} · ${counts[k] ?? 0}</button>`).join("");
     $("filters").querySelectorAll(".chip").forEach(b => b.onclick = () => { filter = b.dataset.filter; render(); });
 
-    const shown = leads.filter(l => filter === "all" ? true : filter === "due" ? isDue(l) : l.status === filter);
+    const srcCounts = { all: leads.length };
+    Object.keys(SOURCES).forEach(k => srcCounts[k] = leads.filter(l => sourceOf(l) === k).length);
+    $("src-filters").innerHTML = [["all","Toutes les sources"], ...Object.entries(SOURCES).map(([k,v]) => [k, v.label])].map(([k,lab]) =>
+      `<button class="chip ${sourceFilter===k?"on":""}" data-src="${k}">${lab} · ${srcCounts[k] ?? 0}</button>`).join("");
+    $("src-filters").querySelectorAll(".chip").forEach(b => b.onclick = () => { sourceFilter = b.dataset.src; render(); });
+
+    const shown = leads
+      .filter(l => sourceFilter === "all" ? true : sourceOf(l) === sourceFilter)
+      .filter(l => filter === "all" ? true : filter === "due" ? isDue(l) : l.status === filter);
     if (!shown.length) {
       $("list").innerHTML = `<div class="empty">${leads.length ? "Aucun lead dans ce filtre." : "Aucun lead pour l'instant. Ils apparaîtront ici dès que quelqu'un remplit le diagnostic."}</div>`;
       return;
@@ -318,14 +338,14 @@
           <div class="lead-contact">${contact}</div>
         </div>
         <div class="pills">
-          ${isV3(l) ? `<span class="pill p-ops">WRZ Ops</span>` : ""}
+          <span class="pill ${SOURCES[sourceOf(l)].cls}">${SOURCES[sourceOf(l)].label}</span>
           ${prio ? `<span class="pill ${prio[1]}">${prio[0]}</span>` : ""}
           <span class="pill p-status">${STATUSES[l.status] || esc(l.status)}</span>
           ${isDue(l) ? `<span class="pill p-due">Relance due</span>` : ""}
         </div>
       </div>
       ${profil ? `<div class="tags">${profil}</div>` : ""}
-      <div class="bars">${bars}</div>
+      ${bars ? `<div class="bars">${bars}</div>` : ""}
       ${stocksNa}
       ${l.open_text ? `<div class="quote">« ${esc(l.open_text)} »</div>` : ""}
       <div class="edit-grid">
@@ -334,7 +354,7 @@
           <select class="f-status">${statusOpts}</select>
         </div>
         <div>
-          <label>Brouillon de relance</label>
+          <label>${isContact(l) ? "Brouillon de réponse" : "Brouillon de relance"}</label>
           <textarea class="f-draft" placeholder="Pas de brouillon généré">${esc(l.draft_followup || "")}</textarea>
         </div>
       </div>
@@ -372,7 +392,7 @@
   // ---------- Export ----------
   function exportCsv(){
     if (!leads.length) { toast("Rien à exporter"); return; }
-    const cols = ["created_at","form_version","prenom","commerce","secteur","taille","outils","email","telephone","code_postal","canal",
+    const cols = ["created_at","source","form_version","prenom","commerce","secteur","taille","outils","email","telephone","code_postal","canal",
       "devis_factures","paiements","pilotage","clients_agenda","visibilite","stocks","stocks_concerne","temps_perdu","urgence",
       "administratif","tresorerie","organisation",
       "demandes_entrantes","procedures","interventions","reporting","relances","transmission","open_text","priority","priority_score","status","draft_followup","contacted_at"];
