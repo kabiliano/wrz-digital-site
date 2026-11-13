@@ -314,10 +314,10 @@ footer { border-top: 1px solid var(--border); padding: 44px 0 36px; }
 
 <nav class="nav">
   <div class="wrap nav-inner">
-    <div class="nav-brand">
+    <a class="nav-brand" href="/" id="logoTop" aria-label="WRZ Ops — retour en haut de la page">
       <div class="nav-mark"><span></span></div>
       <strong>WRZ OPS</strong>
-    </div>
+    </a>
     <div class="nav-links">
       <a href="#probleme">Le problème</a>
       <a href="#fonctionnalites">Fonctionnalités</a>
@@ -723,6 +723,17 @@ footer { border-top: 1px solid var(--border); padding: 44px 0 36px; }
     } finally {
       submitBtn.disabled = false; submitBtn.textContent = 'Envoyer ma demande →';
     }
+  });
+})();
+
+// logo : remonte en haut de la page
+(function(){
+  var logo = document.getElementById('logoTop');
+  if (!logo) return;
+  logo.addEventListener('click', function(e){
+    e.preventDefault();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (location.hash) history.replaceState(null, '', location.pathname);
   });
 })();
 
