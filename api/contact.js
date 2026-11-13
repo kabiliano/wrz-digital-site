@@ -1,4 +1,4 @@
-const TO_EMAIL = 'kabiliano78@hotmail.fr';
+const TO_EMAIL = 'leo.tounsi9@gmail.com';
 const FROM_EMAIL = 'WRZ Ops <formulaire@send.wrz-digital.com>';
 
 function escapeHtml(str) {
