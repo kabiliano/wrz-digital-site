@@ -89,6 +89,14 @@ textarea{resize:vertical;min-height:96px}
 .after a{color:var(--accent)}
 footer{position:relative;z-index:1;text-align:center;font-family:var(--mono);font-size:11px;color:var(--text3);padding:0 20px 26px}
 footer a:hover{color:var(--accent)}
+
+/* ── Téléphone : rien ne doit dépasser la largeur de l'écran ── */
+html, body { overflow-x: clip; }
+@media (max-width: 600px) {
+  .nav-cta .btn-ghost { display: none; }          /* « Parler à un expert » reste dans la page (hero, contact) */
+  .nav-cta .btn { padding: 8px 12px; font-size: 11px; }
+  .nav-brand strong { font-size: 14px; }
+}
 </style>
 </head>
 <body>
